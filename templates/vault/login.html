@@ -1,0 +1,57 @@
+{% extends 'vault/base.html' %}
+{% block title %}Sign In — VaultX{% endblock %}
+{% block body %}
+<div class="auth-page">
+  <div class="auth-bg-glow"></div>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <a href="#" class="logo-mark">
+        <div class="logo-icon">🔐</div>
+        <div>
+          VaultX
+          <span class="logo-sub">Password Manager</span>
+        </div>
+      </a>
+    </div>
+
+    <h1 class="auth-title">Welcome back</h1>
+    <p class="auth-subtitle">Sign in to access your encrypted vault</p>
+
+    {% if form.non_field_errors %}
+    <div class="msg error" style="margin-bottom:18px;">
+      <span>⚠</span> {{ form.non_field_errors.0 }}
+    </div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-row">
+        <label>Username</label>
+        <input type="text" name="username" placeholder="Enter your username" autofocus autocomplete="username">
+        {% if form.username.errors %}<div class="error-msg">{{ form.username.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="form-row">
+        <label>Master Password</label>
+        <div class="input-with-btn">
+          <input type="password" name="password" id="loginPwd" placeholder="Enter your password" autocomplete="current-password">
+          <button type="button" class="input-inner-btn" onclick="togglePassword('loginPwd')">👁</button>
+        </div>
+        {% if form.password.errors %}<div class="error-msg">{{ form.password.errors.0 }}</div>{% endif %}
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:13px; font-size:15px; margin-top:6px;">
+        Unlock Vault →
+      </button>
+    </form>
+
+    <p class="auth-footer-link">
+      New to VaultX? <a href="{% url 'register' %}">Create an account</a>
+    </p>
+
+    <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border);">
+      <p style="font-size:12px; color:var(--text-muted); text-align:center;">
+        🔒 End-to-end encrypted · Your data, your keys
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

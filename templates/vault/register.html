@@ -1,0 +1,74 @@
+{% extends 'vault/base.html' %}
+{% block title %}Create Account — VaultX{% endblock %}
+{% block body %}
+<div class="auth-page">
+  <div class="auth-bg-glow"></div>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <a href="#" class="logo-mark">
+        <div class="logo-icon">🔐</div>
+        <div>
+          VaultX
+          <span class="logo-sub">Password Manager</span>
+        </div>
+      </a>
+    </div>
+
+    <h1 class="auth-title">Create your vault</h1>
+    <p class="auth-subtitle">Set up a free, encrypted password vault</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-row">
+        <label>Username</label>
+        <input type="text" name="username" placeholder="Choose a username" value="{{ form.username.value|default:'' }}" autofocus>
+        {% if form.username.errors %}<div class="error-msg">{{ form.username.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="form-row">
+        <label>Email Address</label>
+        <input type="email" name="email" placeholder="your@email.com" value="{{ form.email.value|default:'' }}">
+        {% if form.email.errors %}<div class="error-msg">{{ form.email.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="form-row">
+        <label>Master Password</label>
+        <div class="input-with-btn">
+          <input type="password" name="password1" id="regPwd1" placeholder="Create a strong password" oninput="updateStrength(this)">
+          <button type="button" class="input-inner-btn" onclick="togglePassword('regPwd1')">👁</button>
+        </div>
+        <div class="pwd-strength">
+          <div class="pwd-strength-bar">
+            <div class="pwd-strength-seg"></div>
+            <div class="pwd-strength-seg"></div>
+            <div class="pwd-strength-seg"></div>
+            <div class="pwd-strength-seg"></div>
+            <div class="pwd-strength-seg"></div>
+          </div>
+          <div class="pwd-strength-label"></div>
+        </div>
+        {% if form.password1.errors %}<div class="error-msg">{{ form.password1.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="form-row">
+        <label>Confirm Password</label>
+        <div class="input-with-btn">
+          <input type="password" name="password2" id="regPwd2" placeholder="Repeat your password">
+          <button type="button" class="input-inner-btn" onclick="togglePassword('regPwd2')">👁</button>
+        </div>
+        {% if form.password2.errors %}<div class="error-msg">{{ form.password2.errors.0 }}</div>{% endif %}
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:13px; font-size:15px; margin-top:6px;">
+        Create Account →
+      </button>
+    </form>
+
+    <p class="auth-footer-link">
+      Already have an account? <a href="{% url 'login' %}">Sign in</a>
+    </p>
+
+    <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border);">
+      <p style="font-size:12px; color:var(--text-muted); text-align:center;">
+        🔒 Your master password is never stored in plaintext
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

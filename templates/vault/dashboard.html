@@ -1,0 +1,183 @@
+{% extends 'vault/base.html' %}
+{% block title %}Dashboard — VaultX{% endblock %}
+{% block body %}
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="{% url 'dashboard' %}" class="logo-mark">
+        <div class="logo-icon">🔐</div>
+        <div>
+          VaultX
+          <span class="logo-sub">Password Manager</span>
+        </div>
+      </a>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="user-pill">
+        <div class="user-avatar">{{ request.user.username|first|upper }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ request.user.username }}</div>
+          <div class="user-role">Personal Vault</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="{% url 'dashboard' %}" class="nav-link active">
+        <span class="nav-icon">🏠</span> All Passwords
+        {% if stats.total %}<span class="nav-badge">{{ stats.total }}</span>{% endif %}
+      </a>
+      <a href="{% url 'dashboard' %}?category=" class="nav-link" id="favLink">
+        <span class="nav-icon">★</span> Favorites
+        {% if stats.favorites %}<span class="nav-badge" style="background:var(--amber)">{{ stats.favorites }}</span>{% endif %}
+      </a>
+      <a href="{% url 'add_entry' %}" class="nav-link">
+        <span class="nav-icon">＋</span> Add Password
+      </a>
+
+      <div class="nav-section-label">Categories</div>
+      {% for val, label in categories %}
+      <a href="{% url 'dashboard' %}?category={{ val }}" class="nav-link {% if active_category == val %}active{% endif %}">
+        <span class="nav-icon">
+          {% if val == 'social' %}📱
+          {% elif val == 'dev' %}💻
+          {% elif val == 'email' %}📧
+          {% elif val == 'finance' %}💳
+          {% elif val == 'work' %}💼
+          {% elif val == 'remote' %}🖥️
+          {% elif val == 'cloud' %}☁️
+          {% elif val == 'shopping' %}🛒
+          {% elif val == 'streaming' %}🎬
+          {% else %}🔑{% endif %}
+        </span>
+        {{ label }}
+      </a>
+      {% endfor %}
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="{% url 'logout' %}" class="nav-link" style="color:var(--rose);">
+        <span class="nav-icon">🚪</span> Sign Out
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title">
+        {% if active_category %}
+          {% for val, label in categories %}{% if val == active_category %}{{ label }}{% endif %}{% endfor %}
+        {% else %}
+          All Passwords
+        {% endif %}
+      </div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <form method="get" id="searchForm">
+          {% if active_category %}<input type="hidden" name="category" value="{{ active_category }}">{% endif %}
+          <input type="text" name="search" placeholder="Search platforms, usernames…" value="{{ search }}" oninput="this.form.submit()">
+        </form>
+      </div>
+      <a href="{% url 'add_entry' %}" class="btn btn-primary btn-sm">
+        + Add Password
+      </a>
+    </div>
+
+    {% if messages %}
+    <div class="messages-bar">
+      {% for msg in messages %}
+      <div class="msg {% if msg.tags %}{{ msg.tags }}{% else %}info{% endif %}">
+        <span>{% if 'success' in msg.tags %}✓{% else %}ℹ{% endif %}</span>
+        {{ msg }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="page-body">
+      <!-- STATS -->
+      {% if not search and not active_category %}
+      <div class="stats-grid">
+        <div class="stat-card blue">
+          <div class="stat-label">Total Saved</div>
+          <div class="stat-value">{{ stats.total }}</div>
+          <div class="stat-icon">🔐</div>
+        </div>
+        <div class="stat-card teal">
+          <div class="stat-label">Favorites</div>
+          <div class="stat-value">{{ stats.favorites }}</div>
+          <div class="stat-icon">★</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">Categories</div>
+          <div class="stat-value">{{ stats.categories }}</div>
+          <div class="stat-icon">📂</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- FAVORITES SECTION -->
+      {% if favorites and not search and not active_category %}
+      <div class="section-header">
+        <div class="section-title">
+          <span>★</span> Favorites
+          <span class="section-count">{{ favorites|length }}</span>
+        </div>
+      </div>
+      <div class="pwd-grid" style="margin-bottom:28px;">
+        {% for entry in favorites %}
+        {% include 'vault/_pwd_card.html' %}
+        {% endfor %}
+      </div>
+      <hr class="divider">
+      {% endif %}
+
+      <!-- ALL PASSWORDS -->
+      <div class="section-header">
+        <div class="section-title">
+          <span>🔑</span>
+          {% if search %}Results for "{{ search }}"
+          {% elif active_category %}{% for val, label in categories %}{% if val == active_category %}{{ label }}{% endif %}{% endfor %}
+          {% else %}All Passwords{% endif %}
+          <span class="section-count">{{ entries|length }}</span>
+        </div>
+        {% if search or active_category %}
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-sm">✕ Clear filter</a>
+        {% endif %}
+      </div>
+
+      {% if entries %}
+      <div class="pwd-grid">
+        {% for entry in entries %}
+        {% include 'vault/_pwd_card.html' %}
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">🔐</div>
+        <div class="empty-title">
+          {% if search %}No results found{% else %}Your vault is empty{% endif %}
+        </div>
+        <div class="empty-desc">
+          {% if search %}Try a different search term{% else %}Start adding passwords to keep them safe{% endif %}
+        </div>
+        {% if not search %}
+        <a href="{% url 'add_entry' %}" class="btn btn-primary">+ Add Your First Password</a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MODALS -->
+{% for entry in entries %}
+<form id="del-{{ entry.pk }}" method="post" action="{% url 'delete_entry' entry.pk %}" style="display:none;">
+  {% csrf_token %}
+</form>
+{% endfor %}
+{% endblock %}

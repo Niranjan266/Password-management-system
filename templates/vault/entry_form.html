@@ -1,0 +1,204 @@
+{% extends 'vault/base.html' %}
+{% block title %}{{ title }} — VaultX{% endblock %}
+{% block body %}
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="{% url 'dashboard' %}" class="logo-mark">
+        <div class="logo-icon">🔐</div>
+        <div>
+          VaultX
+          <span class="logo-sub">Password Manager</span>
+        </div>
+      </a>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-pill">
+        <div class="user-avatar">{{ request.user.username|first|upper }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ request.user.username }}</div>
+          <div class="user-role">Personal Vault</div>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Navigation</div>
+      <a href="{% url 'dashboard' %}" class="nav-link">
+        <span class="nav-icon">←</span> Back to Vault
+      </a>
+      <a href="{% url 'add_entry' %}" class="nav-link {% if not entry %}active{% endif %}">
+        <span class="nav-icon">＋</span> Add Password
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="{% url 'logout' %}" class="nav-link" style="color:var(--rose);">
+        <span class="nav-icon">🚪</span> Sign Out
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title">{{ title }}</div>
+    </div>
+
+    <div class="page-body">
+      <div class="form-page">
+
+        <!-- Quick Add Platforms -->
+        {% if not entry %}
+        <div class="card" style="margin-bottom:20px;">
+          <div style="font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.07em;">Quick Select Platform</div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            {% for platform, cat, icon in quick_platforms %}
+            <button type="button" class="cat-chip"
+                    onclick="selectPlatform('{{ platform }}', '{{ cat }}', '{{ icon }}')"
+                    data-platform="{{ platform }}" data-cat="{{ cat }}">
+              {{ icon }} {{ platform }}
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="form-card">
+          <div class="form-title">
+            <span>{% if entry %}✏{% else %}＋{% endif %}</span>
+            {{ title }}
+          </div>
+
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="form-row-2">
+              <div class="form-row" style="margin-bottom:0">
+                <label>Platform / Service *</label>
+                <input type="text" name="platform" id="platformInput"
+                       placeholder="e.g. Google, GitHub, AWS…"
+                       value="{{ form.platform.value|default:'' }}" required>
+                {% if form.platform.errors %}<div class="error-msg">{{ form.platform.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="form-row" style="margin-bottom:0">
+                <label>Category *</label>
+                <select name="category" id="categorySelect">
+                  {% for val, label in categories %}
+                  <option value="{{ val }}" {% if form.category.value == val %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-bottom:18px;"></div>
+
+            <div class="form-row">
+              <label>Username / Email *</label>
+              <input type="text" name="username"
+                     placeholder="your@email.com or username"
+                     value="{{ form.username.value|default:'' }}" required>
+              {% if form.username.errors %}<div class="error-msg">{{ form.username.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="form-row">
+              <label>Password *</label>
+              <div class="input-with-btn" style="display:flex; gap:8px; align-items:flex-start;">
+                <div style="flex:1; position:relative;">
+                  <input type="password" name="password" id="mainPassword"
+                         placeholder="Enter or generate password"
+                         value="{{ form.password.value|default:'' }}"
+                         oninput="updateStrength(this)" required>
+                  <button type="button" class="input-inner-btn" onclick="togglePassword('mainPassword')">👁</button>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="generatePassword('mainPassword')" style="white-space:nowrap; height:42px; margin-top:0;">
+                  ⚡ Generate
+                </button>
+              </div>
+              <div class="pwd-strength">
+                <div class="pwd-strength-bar">
+                  <div class="pwd-strength-seg"></div>
+                  <div class="pwd-strength-seg"></div>
+                  <div class="pwd-strength-seg"></div>
+                  <div class="pwd-strength-seg"></div>
+                  <div class="pwd-strength-seg"></div>
+                </div>
+                <div class="pwd-strength-label"></div>
+              </div>
+              {% if form.password.errors %}<div class="error-msg">{{ form.password.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="form-row">
+              <label>Website URL</label>
+              <input type="url" name="url"
+                     placeholder="https://example.com"
+                     value="{{ form.url.value|default:'' }}">
+              {% if form.url.errors %}<div class="error-msg">{{ form.url.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="form-row">
+              <label>Notes</label>
+              <textarea name="notes" placeholder="Optional — security questions, account numbers, etc.">{{ form.notes.value|default:'' }}</textarea>
+            </div>
+
+            <div class="form-row">
+              <label class="checkbox-row" style="text-transform:none; letter-spacing:0;">
+                <input type="checkbox" name="is_favorite"
+                       {% if form.is_favorite.value %}checked{% endif %}>
+                <span>⭐ Mark as Favorite</span>
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">
+                {% if entry %}💾 Save Changes{% else %}🔐 Save to Vault{% endif %}
+              </button>
+              <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function selectPlatform(platform, category, icon) {
+  document.getElementById('platformInput').value = platform;
+  document.getElementById('categorySelect').value = category;
+  // Highlight selected chip
+  document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  // Auto-fill URL hints
+  const urls = {
+    'Google': 'https://myaccount.google.com',
+    'Gmail': 'https://mail.google.com',
+    'GitHub': 'https://github.com',
+    'GitLab': 'https://gitlab.com',
+    'Facebook': 'https://facebook.com',
+    'Instagram': 'https://instagram.com',
+    'Twitter': 'https://twitter.com',
+    'LinkedIn': 'https://linkedin.com',
+    'Microsoft': 'https://account.microsoft.com',
+    'Outlook': 'https://outlook.live.com',
+    'AWS': 'https://console.aws.amazon.com',
+    'Azure': 'https://portal.azure.com',
+    'Dropbox': 'https://dropbox.com',
+    'Notion': 'https://notion.so',
+    'Slack': 'https://slack.com',
+    'Discord': 'https://discord.com',
+    'Apple': 'https://appleid.apple.com',
+    'Spotify': 'https://spotify.com',
+    'Netflix': 'https://netflix.com',
+    'PayPal': 'https://paypal.com',
+    'TeamViewer': 'https://teamviewer.com',
+    'AnyDesk': 'https://anydesk.com',
+    'Zoom': 'https://zoom.us',
+    'Figma': 'https://figma.com',
+    'Jira': 'https://id.atlassian.com',
+  };
+  if (urls[platform]) {
+    const urlInput = document.querySelector('input[name="url"]');
+    if (!urlInput.value) urlInput.value = urls[platform];
+  }
+}
+</script>
+{% endblock %}
