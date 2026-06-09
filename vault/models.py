@@ -1,11 +1,12 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.conf import settings
 from cryptography.fernet import Fernet
 import base64
 import hashlib
 
 def get_fernet():
-    key = b'vaultx-enc-key-32bytes-padding123'
+    key = settings.VAULT_ENCRYPTION_KEY.encode()
     key = base64.urlsafe_b64encode(hashlib.sha256(key).digest())
     return Fernet(key)
 

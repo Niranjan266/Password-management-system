@@ -1,10 +1,48 @@
 from pathlib import Path
 import os
+import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = 'django-insecure-vaultx-secret-key-change-in-production-xyz123'
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+IS_VERCEL = bool(os.getenv('VERCEL'))
+
+if IS_VERCEL:
+    required_variables = ('DATABASE_URL', 'DJANGO_SECRET_KEY', 'VAULT_ENCRYPTION_KEY')
+    missing_variables = [name for name in required_variables if not os.getenv(name)]
+    if missing_variables:
+        raise ImproperlyConfigured(
+            'Missing required Vercel environment variables: '
+            + ', '.join(missing_variables)
+        )
+
+
+def env_bool(name, default=False):
+    return os.getenv(name, str(default)).lower() in {'1', 'true', 'yes', 'on'}
+
+
+SECRET_KEY = os.getenv(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-vaultx-secret-key-change-in-production-xyz123',
+)
+DEBUG = env_bool('DJANGO_DEBUG', default=not IS_VERCEL)
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv(
+        'DJANGO_ALLOWED_HOSTS',
+        'localhost,127.0.0.1,.vercel.app',
+    ).split(',')
+    if host.strip()
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = IS_VERCEL
+SESSION_COOKIE_SECURE = IS_VERCEL
+CSRF_COOKIE_SECURE = IS_VERCEL
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -47,10 +85,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'vaultx.wsgi.application'
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=0,
+        conn_health_checks=True,
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = []
@@ -62,10 +101,13 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/login/'
 
-# Encryption key (in production use env var)
-VAULT_ENCRYPTION_KEY = 'vaultx-enc-key-32bytes-padding123'
+VAULT_ENCRYPTION_KEY = os.getenv(
+    'VAULT_ENCRYPTION_KEY',
+    'vaultx-enc-key-32bytes-padding123',
+)
