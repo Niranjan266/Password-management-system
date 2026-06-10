@@ -4,6 +4,7 @@ from django.conf import settings
 from cryptography.fernet import Fernet
 import base64
 import hashlib
+from urllib.parse import quote, urlparse
 
 def get_fernet():
     key = settings.VAULT_ENCRYPTION_KEY.encode()
@@ -36,6 +37,8 @@ PLATFORM_ICONS = {
 class PasswordEntry(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='passwords')
     platform = models.CharField(max_length=100)
+    logo = models.FileField(upload_to='password_logos/', blank=True, null=True)
+    logo_url = models.URLField(blank=True, null=True)
     username = models.CharField(max_length=200)
     _password = models.TextField(db_column='password')
     url = models.URLField(blank=True, null=True)
@@ -66,6 +69,19 @@ class PasswordEntry(models.Model):
         return '🔐'
 
     @property
+    def logo_image_url(self):
+        if self.logo:
+            return self.logo.url
+        if self.logo_url:
+            return self.logo_url
+
+        if self.url:
+            domain = urlparse(self.url).netloc
+        else:
+            domain = self.platform.lower().replace(' ', '') + '.com'
+        return f"https://www.google.com/s2/favicons?domain={quote(domain)}&sz=128"
+
+    @property
     def category_color(self):
         colors = {
             'social': '#8B5CF6', 'dev': '#10B981', 'email': '#3B82F6',
@@ -77,6 +93,28 @@ class PasswordEntry(models.Model):
 
     def __str__(self):
         return f"{self.platform} - {self.username}"
+
+    class Meta:
+        ordering = ['-updated_at']
+
+
+class DataPlatform(models.Model):
+    PLATFORM_TYPES = [
+        ('note', 'Notepad'),
+        ('sheet', 'Sheet'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='data_platforms')
+    name = models.CharField(max_length=100)
+    image = models.FileField(upload_to='platform_images/', blank=True, null=True)
+    platform_type = models.CharField(max_length=20, choices=PLATFORM_TYPES, default='note')
+    note_content = models.TextField(blank=True)
+    sheet_data = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.get_platform_type_display()})"
 
     class Meta:
         ordering = ['-updated_at']

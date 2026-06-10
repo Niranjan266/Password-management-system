@@ -1,0 +1,39 @@
+{% extends 'vault/base.html' %}
+{% block title %}{{ platform.name }} - VaultX{% endblock %}
+{% block body %}
+<div class="app-layout">
+  <aside class="sidebar"><div class="sidebar-logo"><a href="{% url 'dashboard' %}" class="logo-mark"><div class="logo-icon">&#128274;</div><div>VaultX<span class="logo-sub">Password & Data Manager</span></div></a></div><nav class="sidebar-nav"><div class="nav-section-label">Navigation</div><a href="{% url 'data_spaces' %}" class="nav-link"><span class="nav-icon">&#8592;</span> All Data Spaces</a><a href="{% url 'edit_data_platform' platform.pk %}" class="nav-link active"><span class="nav-icon">{% if platform.platform_type == 'note' %}N{% else %}S{% endif %}</span> {{ platform.name }}</a></nav></aside>
+  <main class="main-content">
+    <div class="topbar">{% if platform.image %}<img src="{{ platform.image.url }}" alt="" class="space-card-image" style="width:36px;height:36px;">{% endif %}<div class="topbar-title">{{ platform.name }} <span class="space-meta">{{ platform.get_platform_type_display }}</span></div><a href="{% url 'data_spaces' %}" class="btn btn-secondary btn-sm">Close</a></div>
+    {% if messages %}<div class="messages-bar">{% for msg in messages %}<div class="msg {{ msg.tags }}">{{ msg }}</div>{% endfor %}</div>{% endif %}
+    <div class="page-body"><div class="editor-shell"><form method="post" id="editorForm">{% csrf_token %}
+      {% if platform.platform_type == 'note' %}
+      <textarea class="note-editor" name="note_content" placeholder="Start writing your notes here...">{{ platform.note_content }}</textarea>
+      {% else %}
+      <div class="sheet-toolbar"><button type="button" class="btn btn-secondary btn-sm" onclick="addRow()">+ Row</button><button type="button" class="btn btn-secondary btn-sm" onclick="addColumn()">+ Column</button></div>
+      <div class="sheet-wrap"><table class="data-sheet" id="dataSheet"></table></div><input type="hidden" name="sheet_data" id="serializedSheetData">{{ platform.sheet_data|json_script:"initial-sheet-data" }}
+      {% endif %}
+      <div class="form-actions"><button type="submit" class="btn btn-primary">Save Data</button><span class="space-meta">Saved in your database</span></div>
+    </form></div></div>
+  </main>
+</div>
+{% if platform.platform_type == 'sheet' %}
+<script>
+let gridData = JSON.parse(document.getElementById('initial-sheet-data').textContent);
+if (!gridData.length) gridData = [['', '', '']];
+function escapeHtml(value) { return String(value).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+function renderSheet() {
+  const cols = Math.max(1, ...gridData.map(row => row.length));
+  gridData = gridData.map(row => [...row, ...Array(cols - row.length).fill('')]);
+  document.getElementById('dataSheet').innerHTML = '<thead><tr>' + Array.from({length:cols},(_,i)=>`<th>${String.fromCharCode(65+i)}</th>`).join('') + '</tr></thead><tbody>' + gridData.map((row,r)=>'<tr>'+row.map((cell,c)=>`<td><input value="${escapeHtml(cell)}" data-row="${r}" data-col="${c}"></td>`).join('')+'</tr>').join('') + '</tbody>';
+  document.querySelectorAll('#dataSheet input').forEach(input => input.addEventListener('input', event => {
+    gridData[Number(event.target.dataset.row)][Number(event.target.dataset.col)] = event.target.value;
+  }));
+}
+function addRow(){ gridData.push(Array(gridData[0].length).fill('')); renderSheet(); }
+function addColumn(){ gridData.forEach(row=>row.push('')); renderSheet(); }
+document.getElementById('editorForm').addEventListener('submit',()=>document.getElementById('serializedSheetData').value=JSON.stringify(gridData));
+renderSheet();
+</script>
+{% endif %}
+{% endblock %}

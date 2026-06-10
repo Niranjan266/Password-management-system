@@ -1,7 +1,9 @@
 {% load static %}
 <div class="pwd-card" style="--card-accent: {{ entry.category_color }}">
   <div class="pwd-card-header">
-    <div class="pwd-platform-icon">{{ entry.icon }}</div>
+    <div class="pwd-platform-icon">
+      <img src="{{ entry.logo_image_url }}" alt="{{ entry.platform }} logo" class="pwd-platform-logo">
+    </div>
     <div class="pwd-platform-info">
       <div class="pwd-platform-name">{{ entry.platform }}</div>
       <span class="pwd-category-badge" style="background:{{ entry.category_color }}22; color:{{ entry.category_color }};">

@@ -51,11 +51,11 @@
         <div class="card" style="margin-bottom:20px;">
           <div style="font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.07em;">Quick Select Platform</div>
           <div style="display:flex; flex-wrap:wrap; gap:8px;">
-            {% for platform, cat, icon in quick_platforms %}
+            {% for platform, cat, domain in quick_platforms %}
             <button type="button" class="cat-chip"
-                    onclick="selectPlatform('{{ platform }}', '{{ cat }}', '{{ icon }}')"
+                    onclick="selectPlatform('{{ platform }}', '{{ cat }}', '{{ domain }}', event)"
                     data-platform="{{ platform }}" data-cat="{{ cat }}">
-              {{ icon }} {{ platform }}
+              <img src="https://www.google.com/s2/favicons?domain={{ domain }}&sz=64" alt="" class="quick-platform-logo"> {{ platform }}
             </button>
             {% endfor %}
           </div>
@@ -68,7 +68,7 @@
             {{ title }}
           </div>
 
-          <form method="post">
+          <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
 
             <div class="form-row-2">
@@ -90,6 +90,23 @@
             </div>
 
             <div style="margin-bottom:18px;"></div>
+
+            <div class="form-row">
+              <label>Logo Image Address <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);">(Optional)</span></label>
+              {% if entry %}
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <img src="{{ entry.logo_image_url }}" alt="{{ entry.platform }} logo" class="pwd-platform-logo" style="width:42px;height:42px;">
+                <span style="font-size:12px;color:var(--text-muted);">Current logo preview</span>
+              </div>
+              {% endif %}
+              <input type="url" name="logo_url" id="logoUrlInput"
+                     placeholder="https://example.com/logo.png"
+                     value="{{ form.logo_url.value|default:'' }}">
+              {% if form.logo_url.errors %}<div class="error-msg">{{ form.logo_url.errors.0 }}</div>{% endif %}
+              <div style="font-size:12px;color:var(--text-muted);margin:8px 0;">Or upload an image file:</div>
+              <input type="file" name="logo" accept="image/*">
+              {% if form.logo.errors %}<div class="error-msg">{{ form.logo.errors.0 }}</div>{% endif %}
+            </div>
 
             <div class="form-row">
               <label>Username / Email *</label>
@@ -161,12 +178,13 @@
 </div>
 
 <script>
-function selectPlatform(platform, category, icon) {
+function selectPlatform(platform, category, domain, clickEvent) {
   document.getElementById('platformInput').value = platform;
   document.getElementById('categorySelect').value = category;
+  document.getElementById('logoUrlInput').value = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
   // Highlight selected chip
   document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
-  event.target.classList.add('active');
+  clickEvent.currentTarget.classList.add('active');
   // Auto-fill URL hints
   const urls = {
     'Google': 'https://myaccount.google.com',

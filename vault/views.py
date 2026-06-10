@@ -6,20 +6,20 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db.models import Q
 import json
-from .models import PasswordEntry, CATEGORY_CHOICES
-from .forms import RegisterForm, LoginForm, PasswordEntryForm
+from .models import DataPlatform, PasswordEntry, CATEGORY_CHOICES
+from .forms import DataPlatformForm, RegisterForm, LoginForm, PasswordEntryForm
 
 QUICK_PLATFORMS = [
-    ('Google', 'social', '🔵'), ('Gmail', 'email', '📧'), ('GitHub', 'dev', '🐙'),
-    ('GitLab', 'dev', '🦊'), ('Facebook', 'social', '📘'), ('Instagram', 'social', '📸'),
-    ('Twitter', 'social', '🐦'), ('LinkedIn', 'work', '💼'), ('Microsoft', 'work', '🪟'),
-    ('Outlook', 'email', '📨'), ('AWS', 'cloud', '☁️'), ('Azure', 'cloud', '🔷'),
-    ('Dropbox', 'cloud', '📦'), ('Notion', 'work', '📝'), ('Slack', 'work', '💬'),
-    ('Discord', 'social', '🎮'), ('Apple', 'other', '🍎'), ('Spotify', 'streaming', '🎵'),
-    ('Netflix', 'streaming', '🎬'), ('PayPal', 'finance', '💳'),
-    ('TeamViewer', 'remote', '🖥️'), ('AnyDesk', 'remote', '🖥️'),
-    ('RDP', 'remote', '💻'), ('VNC', 'remote', '🔌'), ('SSH', 'remote', '⌨️'),
-    ('Zoom', 'work', '📹'), ('Figma', 'work', '🎨'), ('Jira', 'work', '📋'),
+    ('Google', 'social', 'google.com'), ('Gmail', 'email', 'mail.google.com'), ('GitHub', 'dev', 'github.com'),
+    ('GitLab', 'dev', 'gitlab.com'), ('Facebook', 'social', 'facebook.com'), ('Instagram', 'social', 'instagram.com'),
+    ('Twitter', 'social', 'x.com'), ('LinkedIn', 'work', 'linkedin.com'), ('Microsoft', 'work', 'microsoft.com'),
+    ('Outlook', 'email', 'outlook.live.com'), ('AWS', 'cloud', 'aws.amazon.com'), ('Azure', 'cloud', 'azure.microsoft.com'),
+    ('Dropbox', 'cloud', 'dropbox.com'), ('Notion', 'work', 'notion.so'), ('Slack', 'work', 'slack.com'),
+    ('Discord', 'social', 'discord.com'), ('Apple', 'other', 'apple.com'), ('Spotify', 'streaming', 'spotify.com'),
+    ('Netflix', 'streaming', 'netflix.com'), ('PayPal', 'finance', 'paypal.com'),
+    ('TeamViewer', 'remote', 'teamviewer.com'), ('AnyDesk', 'remote', 'anydesk.com'),
+    ('RDP', 'remote', 'microsoft.com'), ('VNC', 'remote', 'realvnc.com'), ('SSH', 'remote', 'openssh.com'),
+    ('Zoom', 'work', 'zoom.us'), ('Figma', 'work', 'figma.com'), ('Jira', 'work', 'atlassian.com'),
 ]
 
 def register_view(request):
@@ -77,7 +77,7 @@ def dashboard(request):
 @login_required
 def add_entry(request):
     if request.method == 'POST':
-        form = PasswordEntryForm(request.POST)
+        form = PasswordEntryForm(request.POST, request.FILES)
         if form.is_valid():
             entry = form.save(commit=False)
             entry.user = request.user
@@ -92,7 +92,7 @@ def add_entry(request):
 def edit_entry(request, pk):
     entry = get_object_or_404(PasswordEntry, pk=pk, user=request.user)
     if request.method == 'POST':
-        form = PasswordEntryForm(request.POST, instance=entry)
+        form = PasswordEntryForm(request.POST, request.FILES, instance=entry)
         if form.is_valid():
             form.save()
             messages.success(request, f'"{entry.platform}" updated!')
@@ -107,6 +107,8 @@ def delete_entry(request, pk):
     entry = get_object_or_404(PasswordEntry, pk=pk, user=request.user)
     if request.method == 'POST':
         name = entry.platform
+        if entry.logo:
+            entry.logo.delete(save=False)
         entry.delete()
         messages.success(request, f'"{name}" removed from vault.')
     return redirect('dashboard')
@@ -123,3 +125,59 @@ def toggle_favorite(request, pk):
     entry.is_favorite = not entry.is_favorite
     entry.save()
     return JsonResponse({'is_favorite': entry.is_favorite})
+
+
+@login_required
+def data_spaces(request):
+    platforms = DataPlatform.objects.filter(user=request.user)
+    return render(request, 'vault/data_spaces.html', {'platforms': platforms})
+
+
+@login_required
+def create_data_platform(request):
+    if request.method == 'POST':
+        form = DataPlatformForm(request.POST, request.FILES)
+        if form.is_valid():
+            platform = form.save(commit=False)
+            platform.user = request.user
+            if platform.platform_type == 'sheet':
+                platform.sheet_data = [['', '', ''], ['', '', ''], ['', '', '']]
+            platform.save()
+            messages.success(request, f'"{platform.name}" created!')
+            return redirect('edit_data_platform', pk=platform.pk)
+    else:
+        form = DataPlatformForm()
+    return render(request, 'vault/data_platform_form.html', {'form': form})
+
+
+@login_required
+def edit_data_platform(request, pk):
+    platform = get_object_or_404(DataPlatform, pk=pk, user=request.user)
+    if request.method == 'POST':
+        if platform.platform_type == 'note':
+            platform.note_content = request.POST.get('note_content', '')
+        else:
+            try:
+                sheet_data = json.loads(request.POST.get('sheet_data', '[]'))
+                if not isinstance(sheet_data, list):
+                    raise ValueError
+                platform.sheet_data = sheet_data
+            except (json.JSONDecodeError, ValueError):
+                messages.error(request, 'The sheet data could not be saved.')
+                return redirect('edit_data_platform', pk=platform.pk)
+        platform.save()
+        messages.success(request, f'"{platform.name}" saved!')
+        return redirect('edit_data_platform', pk=platform.pk)
+    return render(request, 'vault/data_platform_editor.html', {'platform': platform})
+
+
+@login_required
+@require_POST
+def delete_data_platform(request, pk):
+    platform = get_object_or_404(DataPlatform, pk=pk, user=request.user)
+    name = platform.name
+    if platform.image:
+        platform.image.delete(save=False)
+    platform.delete()
+    messages.success(request, f'"{name}" deleted.')
+    return redirect('data_spaces')

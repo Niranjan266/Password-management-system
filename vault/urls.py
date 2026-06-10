@@ -12,4 +12,8 @@ urlpatterns = [
     path('delete/<int:pk>/', views.delete_entry, name='delete_entry'),
     path('password/<int:pk>/', views.get_password, name='get_password'),
     path('favorite/<int:pk>/', views.toggle_favorite, name='toggle_favorite'),
+    path('spaces/', views.data_spaces, name='data_spaces'),
+    path('spaces/new/', views.create_data_platform, name='create_data_platform'),
+    path('spaces/<int:pk>/', views.edit_data_platform, name='edit_data_platform'),
+    path('spaces/<int:pk>/delete/', views.delete_data_platform, name='delete_data_platform'),
 ]

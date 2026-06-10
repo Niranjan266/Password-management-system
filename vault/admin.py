@@ -1,3 +1,5 @@
 from django.contrib import admin
+from .models import DataPlatform, PasswordEntry
 
-# Register your models here.
+admin.site.register(PasswordEntry)
+admin.site.register(DataPlatform)

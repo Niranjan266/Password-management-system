@@ -370,6 +370,7 @@ body {
 
 .cat-chip:hover { border-color: var(--accent); color: var(--accent); }
 .cat-chip.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+.quick-platform-logo { width:18px; height:18px; object-fit:contain; border-radius:4px; vertical-align:middle; }
 
 /* PASSWORD GRID */
 .pwd-grid {
@@ -420,6 +421,13 @@ body {
   font-size: 20px;
   flex-shrink: 0;
   border: 1px solid var(--border);
+}
+
+.pwd-platform-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
 }
 
 .pwd-platform-info { flex: 1; min-width: 0; }
@@ -840,6 +848,25 @@ textarea { resize: vertical; min-height: 90px; }
 .pwd-strength-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
 /* RESPONSIVE */
+.space-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px; }
+.space-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; color:var(--text-primary); text-decoration:none; transition:all .2s; }
+.space-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+.space-card-head { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.space-card-image { width:52px; height:52px; object-fit:cover; border-radius:13px; border:1px solid var(--border); background:var(--bg-hover); }
+.space-card-placeholder { width:52px; height:52px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:20px; font-weight:700; background:linear-gradient(135deg,var(--accent-dim),var(--purple)); }
+.space-name { font-family:var(--font-display); font-size:16px; font-weight:600; }
+.space-meta { color:var(--text-muted); font-size:12px; }
+.space-card-actions { display:flex; gap:8px; border-top:1px solid var(--border); padding-top:12px; }
+.editor-shell { max-width:1100px; margin:0 auto; }
+.note-editor { min-height:65vh; padding:22px; font-family:var(--font-body); line-height:1.8; }
+.sheet-toolbar { display:flex; gap:8px; margin-bottom:12px; }
+.sheet-wrap { overflow:auto; border:1px solid var(--border); border-radius:var(--radius); }
+.data-sheet { width:100%; border-collapse:collapse; min-width:700px; }
+.data-sheet th { background:var(--bg-hover); color:var(--text-muted); font-size:11px; padding:8px; border:1px solid var(--border); min-width:160px; }
+.data-sheet td { border:1px solid var(--border); padding:0; }
+.data-sheet input { border:none; border-radius:0; box-shadow:none; background:var(--bg-surface); padding:11px; }
+.data-sheet input:focus { box-shadow:inset 0 0 0 2px var(--accent); }
+
 @media (max-width: 900px) {
   .sidebar { width: 220px; min-width: 220px; }
   .main-content { margin-left: 220px; }
