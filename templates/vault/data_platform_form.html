@@ -1,20 +1,89 @@
 {% extends 'vault/base.html' %}
-{% block title %}New Data Platform - VaultX{% endblock %}
+{% block title %}New Data Platform — VaultX{% endblock %}
 {% block body %}
 <div class="app-layout">
-  <aside class="sidebar"><div class="sidebar-logo"><a href="{% url 'dashboard' %}" class="logo-mark"><div class="logo-icon">&#128274;</div><div>VaultX<span class="logo-sub">Password & Data Manager</span></div></a></div><nav class="sidebar-nav"><div class="nav-section-label">Navigation</div><a href="{% url 'data_spaces' %}" class="nav-link"><span class="nav-icon">&#8592;</span> Back to Data Spaces</a><a href="{% url 'create_data_platform' %}" class="nav-link active"><span class="nav-icon">+</span> New Platform</a></nav></aside>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="{% url 'dashboard' %}" class="logo-mark">
+        <div class="logo-icon">🔐</div>
+        <div>VaultX<span class="logo-sub">Password & Data Manager</span></div>
+      </a>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-pill">
+        <div class="user-avatar">{{ request.user.username|first|upper }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ request.user.username }}</div>
+          <div class="user-role">Personal Vault</div>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Navigation</div>
+      <a href="{% url 'data_spaces' %}" class="nav-link"><span class="nav-icon">←</span> Back to Data Spaces</a>
+      <a href="{% url 'create_data_platform' %}" class="nav-link active"><span class="nav-icon">+</span> New Platform</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="{% url 'logout' %}" class="nav-link" style="color:var(--rose)">Sign Out</a>
+    </div>
+  </aside>
+
   <main class="main-content">
-    <div class="topbar"><div class="topbar-title">Create Data Platform</div></div>
-    <div class="page-body"><div class="form-page"><div class="form-card">
-      <div class="form-title"><span>+</span> New Platform</div>
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="form-row"><label>Platform Name *</label><input type="text" name="name" value="{{ form.name.value|default:'' }}" placeholder="e.g. Project Notes, Customer Data" required>{% if form.name.errors %}<div class="error-msg">{{ form.name.errors.0 }}</div>{% endif %}</div>
-        <div class="form-row"><label>Platform Image</label><input type="file" name="image" accept="image/*">{% if form.image.errors %}<div class="error-msg">{{ form.image.errors.0 }}</div>{% endif %}</div>
-        <div class="form-row"><label>Page Type *</label><select name="platform_type">{% for val, label in form.fields.platform_type.choices %}<option value="{{ val }}" {% if form.platform_type.value == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-        <div class="form-actions"><button type="submit" class="btn btn-primary">Create Platform</button><a href="{% url 'data_spaces' %}" class="btn btn-secondary">Cancel</a></div>
-      </form>
-    </div></div></div>
+    <div class="topbar">
+      <div class="topbar-title">Create Data Platform</div>
+    </div>
+
+    {% if messages %}
+    <script>
+    document.addEventListener('DOMContentLoaded',function(){
+      {% for msg in messages %}
+      showPopup('{{ msg|escapejs }}','{% if "success" in msg.tags %}success{% elif "error" in msg.tags %}error{% else %}info{% endif %}');
+      {% endfor %}
+    });
+    </script>
+    {% endif %}
+
+    <div class="page-body">
+      <div class="form-page">
+        <div class="form-card">
+          <div class="form-title"><span>+</span> New Platform</div>
+          <form method="post" enctype="multipart/form-data" id="platformForm">
+            {% csrf_token %}
+            <div class="form-row">
+              <label>Platform Name *</label>
+              <input type="text" name="name" value="{{ form.name.value|default:'' }}"
+                     placeholder="e.g. Project Notes, Customer Data" required autofocus>
+              {% if form.name.errors %}<div class="error-msg">{{ form.name.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-row">
+              <label>Platform Image</label>
+              <input type="file" name="image" accept="image/*">
+              {% if form.image.errors %}<div class="error-msg">{{ form.image.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-row">
+              <label>Page Type *</label>
+              <select name="platform_type">
+                {% for val, label in form.fields.platform_type.choices %}
+                <option value="{{ val }}" {% if form.platform_type.value == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="createBtn">
+                <span class="btn-text">Create Platform</span>
+                <span class="btn-spinner"><span></span><span></span><span></span></span>
+              </button>
+              <a href="{% url 'data_spaces' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
+<script>
+document.getElementById('platformForm').addEventListener('submit',function(){
+  document.getElementById('createBtn').classList.add('btn-loading');
+});
+</script>
 {% endblock %}

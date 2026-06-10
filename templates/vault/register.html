@@ -3,36 +3,43 @@
 {% block body %}
 <div class="auth-page">
   <div class="auth-bg-glow"></div>
+  <div class="auth-orb auth-orb-1"></div>
+  <div class="auth-orb auth-orb-2"></div>
+  <div class="auth-orb auth-orb-3"></div>
+  <canvas id="gridCanvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0.35"></canvas>
+
   <div class="auth-card">
     <div class="auth-logo">
-      <a href="#" class="logo-mark">
+      <a href="#" class="logo-mark" style="justify-content:center">
         <div class="logo-icon">🔐</div>
-        <div>
-          VaultX
-          <span class="logo-sub">Password Manager</span>
-        </div>
+        <div>VaultX<span class="logo-sub">Password Manager</span></div>
       </a>
     </div>
 
     <h1 class="auth-title">Create your vault</h1>
     <p class="auth-subtitle">Set up a free, encrypted password vault</p>
 
-    <form method="post">
+    <form method="post" id="regForm">
       {% csrf_token %}
-      <div class="form-row">
+      <div class="form-row" style="animation-delay:.3s">
         <label>Username</label>
-        <input type="text" name="username" placeholder="Choose a username" value="{{ form.username.value|default:'' }}" autofocus>
+        <input type="text" name="username" placeholder="Choose a username"
+               value="{{ form.username.value|default:'' }}" autofocus>
         {% if form.username.errors %}<div class="error-msg">{{ form.username.errors.0 }}</div>{% endif %}
       </div>
-      <div class="form-row">
+
+      <div class="form-row" style="animation-delay:.34s">
         <label>Email Address</label>
-        <input type="email" name="email" placeholder="your@email.com" value="{{ form.email.value|default:'' }}">
+        <input type="email" name="email" placeholder="your@email.com"
+               value="{{ form.email.value|default:'' }}">
         {% if form.email.errors %}<div class="error-msg">{{ form.email.errors.0 }}</div>{% endif %}
       </div>
-      <div class="form-row">
+
+      <div class="form-row" style="animation-delay:.38s">
         <label>Master Password</label>
         <div class="input-with-btn">
-          <input type="password" name="password1" id="regPwd1" placeholder="Create a strong password" oninput="updateStrength(this)">
+          <input type="password" name="password1" id="regPwd1"
+                 placeholder="Create a strong password" oninput="updateStrength(this)">
           <button type="button" class="input-inner-btn" onclick="togglePassword('regPwd1')">👁</button>
         </div>
         <div class="pwd-strength">
@@ -47,28 +54,69 @@
         </div>
         {% if form.password1.errors %}<div class="error-msg">{{ form.password1.errors.0 }}</div>{% endif %}
       </div>
-      <div class="form-row">
+
+      <div class="form-row" style="animation-delay:.42s">
         <label>Confirm Password</label>
         <div class="input-with-btn">
-          <input type="password" name="password2" id="regPwd2" placeholder="Repeat your password">
+          <input type="password" name="password2" id="regPwd2"
+                 placeholder="Repeat your password" oninput="checkMatch()">
           <button type="button" class="input-inner-btn" onclick="togglePassword('regPwd2')">👁</button>
         </div>
+        <div id="matchMsg" style="font-size:12px;margin-top:4px;transition:color .3s"></div>
         {% if form.password2.errors %}<div class="error-msg">{{ form.password2.errors.0 }}</div>{% endif %}
       </div>
-      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:13px; font-size:15px; margin-top:6px;">
-        Create Account →
+
+      <button type="submit" class="btn btn-primary" id="regBtn"
+              style="width:100%;justify-content:center;padding:13px;font-size:15px;margin-top:6px;animation:fadeInUp .4s .48s ease both">
+        <span class="btn-text">🔐 Create Account</span>
+        <span class="btn-spinner"><span></span><span></span><span></span></span>
       </button>
     </form>
 
     <p class="auth-footer-link">
       Already have an account? <a href="{% url 'login' %}">Sign in</a>
     </p>
-
-    <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border);">
-      <p style="font-size:12px; color:var(--text-muted); text-align:center;">
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);animation:fadeInUp .4s .6s ease both">
+      <p style="font-size:12px;color:var(--text-muted);text-align:center">
         🔒 Your master password is never stored in plaintext
       </p>
     </div>
   </div>
 </div>
+
+<script>
+const canvas=document.getElementById('gridCanvas');
+const ctx=canvas.getContext('2d');
+function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+resizeCanvas();window.addEventListener('resize',resizeCanvas);
+function drawGrid(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const size=50;const t=Date.now()/3000;
+  ctx.strokeStyle='rgba(139,92,246,0.07)';ctx.lineWidth=1;
+  for(let x=0;x<canvas.width;x+=size){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();}
+  for(let y=0;y<canvas.height;y+=size){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();}
+  for(let x=0;x<canvas.width;x+=size){
+    for(let y=0;y<canvas.height;y+=size){
+      const pulse=Math.sin(t*2+x*0.03+y*0.04)*0.5+0.5;
+      ctx.beginPath();ctx.arc(x,y,1.5*pulse,0,Math.PI*2);
+      ctx.fillStyle=`rgba(139,92,246,${0.1*pulse})`;ctx.fill();
+    }
+  }
+  requestAnimationFrame(drawGrid);
+}
+drawGrid();
+
+function checkMatch(){
+  const p1=document.getElementById('regPwd1').value;
+  const p2=document.getElementById('regPwd2').value;
+  const msg=document.getElementById('matchMsg');
+  if(!p2)return(msg.textContent='');
+  if(p1===p2){msg.textContent='✓ Passwords match';msg.style.color='var(--green)';}
+  else{msg.textContent='✕ Passwords do not match';msg.style.color='var(--rose)';}
+}
+
+document.getElementById('regForm').addEventListener('submit',function(){
+  document.getElementById('regBtn').classList.add('btn-loading');
+});
+</script>
 {% endblock %}

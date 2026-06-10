@@ -7,13 +7,9 @@
     <div class="sidebar-logo">
       <a href="{% url 'dashboard' %}" class="logo-mark">
         <div class="logo-icon">🔐</div>
-        <div>
-          VaultX
-          <span class="logo-sub">Password Manager</span>
-        </div>
+        <div>VaultX<span class="logo-sub">Password Manager</span></div>
       </a>
     </div>
-
     <div class="sidebar-user">
       <div class="user-pill">
         <div class="user-avatar">{{ request.user.username|first|upper }}</div>
@@ -23,14 +19,13 @@
         </div>
       </div>
     </div>
-
     <nav class="sidebar-nav">
       <div class="nav-section-label">Main</div>
       <a href="{% url 'dashboard' %}" class="nav-link active">
         <span class="nav-icon">🏠</span> All Passwords
         {% if stats.total %}<span class="nav-badge">{{ stats.total }}</span>{% endif %}
       </a>
-      <a href="{% url 'dashboard' %}?category=" class="nav-link" id="favLink">
+      <a href="{% url 'dashboard' %}?favorites=1" class="nav-link">
         <span class="nav-icon">★</span> Favorites
         {% if stats.favorites %}<span class="nav-badge" style="background:var(--amber)">{{ stats.favorites }}</span>{% endif %}
       </a>
@@ -40,29 +35,21 @@
       <a href="{% url 'data_spaces' %}" class="nav-link">
         <span class="nav-icon">&#9638;</span> Data Spaces
       </a>
-
       <div class="nav-section-label">Categories</div>
       {% for val, label in categories %}
       <a href="{% url 'dashboard' %}?category={{ val }}" class="nav-link {% if active_category == val %}active{% endif %}">
         <span class="nav-icon">
-          {% if val == 'social' %}📱
-          {% elif val == 'dev' %}💻
-          {% elif val == 'email' %}📧
-          {% elif val == 'finance' %}💳
-          {% elif val == 'work' %}💼
-          {% elif val == 'remote' %}🖥️
-          {% elif val == 'cloud' %}☁️
-          {% elif val == 'shopping' %}🛒
-          {% elif val == 'streaming' %}🎬
+          {% if val == 'social' %}📱{% elif val == 'dev' %}💻{% elif val == 'email' %}📧
+          {% elif val == 'finance' %}💳{% elif val == 'work' %}💼{% elif val == 'remote' %}🖥️
+          {% elif val == 'cloud' %}☁️{% elif val == 'shopping' %}🛒{% elif val == 'streaming' %}🎬
           {% else %}🔑{% endif %}
         </span>
         {{ label }}
       </a>
       {% endfor %}
     </nav>
-
     <div class="sidebar-footer">
-      <a href="{% url 'logout' %}" class="nav-link" style="color:var(--rose);">
+      <a href="{% url 'logout' %}" class="nav-link" style="color:var(--rose)">
         <span class="nav-icon">🚪</span> Sign Out
       </a>
     </div>
@@ -74,15 +61,14 @@
       <div class="topbar-title">
         {% if active_category %}
           {% for val, label in categories %}{% if val == active_category %}{{ label }}{% endif %}{% endfor %}
-        {% else %}
-          All Passwords
-        {% endif %}
+        {% else %}All Passwords{% endif %}
       </div>
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
         <form method="get" id="searchForm">
           {% if active_category %}<input type="hidden" name="category" value="{{ active_category }}">{% endif %}
-          <input type="text" name="search" placeholder="Search platforms, usernames…" value="{{ search }}" oninput="this.form.submit()">
+          <input type="text" name="search" placeholder="Search platforms, usernames…"
+                 value="{{ search }}" id="searchInput">
         </form>
       </div>
       <a href="{% url 'add_entry' %}" class="btn btn-primary btn-sm">
@@ -90,15 +76,15 @@
       </a>
     </div>
 
+    <!-- Django messages → popup -->
     {% if messages %}
-    <div class="messages-bar">
+    <script>
+    document.addEventListener('DOMContentLoaded',function(){
       {% for msg in messages %}
-      <div class="msg {% if msg.tags %}{{ msg.tags }}{% else %}info{% endif %}">
-        <span>{% if 'success' in msg.tags %}✓{% else %}ℹ{% endif %}</span>
-        {{ msg }}
-      </div>
+      showPopup('{{ msg|escapejs }}','{% if "success" in msg.tags %}success{% elif "error" in msg.tags %}error{% elif "warning" in msg.tags %}warning{% else %}info{% endif %}');
       {% endfor %}
-    </div>
+    });
+    </script>
     {% endif %}
 
     <div class="page-body">
@@ -107,23 +93,23 @@
       <div class="stats-grid">
         <div class="stat-card blue">
           <div class="stat-label">Total Saved</div>
-          <div class="stat-value">{{ stats.total }}</div>
+          <div class="stat-value" data-count="{{ stats.total }}">{{ stats.total }}</div>
           <div class="stat-icon">🔐</div>
         </div>
         <div class="stat-card teal">
           <div class="stat-label">Favorites</div>
-          <div class="stat-value">{{ stats.favorites }}</div>
+          <div class="stat-value" data-count="{{ stats.favorites }}">{{ stats.favorites }}</div>
           <div class="stat-icon">★</div>
         </div>
         <div class="stat-card purple">
           <div class="stat-label">Categories</div>
-          <div class="stat-value">{{ stats.categories }}</div>
+          <div class="stat-value" data-count="{{ stats.categories }}">{{ stats.categories }}</div>
           <div class="stat-icon">📂</div>
         </div>
       </div>
       {% endif %}
 
-      <!-- FAVORITES SECTION -->
+      <!-- FAVORITES -->
       {% if favorites and not search and not active_category %}
       <div class="section-header">
         <div class="section-title">
@@ -131,10 +117,8 @@
           <span class="section-count">{{ favorites|length }}</span>
         </div>
       </div>
-      <div class="pwd-grid" style="margin-bottom:28px;">
-        {% for entry in favorites %}
-        {% include 'vault/_pwd_card.html' %}
-        {% endfor %}
+      <div class="pwd-grid" style="margin-bottom:28px">
+        {% for entry in favorites %}{% include 'vault/_pwd_card.html' %}{% endfor %}
       </div>
       <hr class="divider">
       {% endif %}
@@ -154,33 +138,48 @@
       </div>
 
       {% if entries %}
-      <div class="pwd-grid">
-        {% for entry in entries %}
-        {% include 'vault/_pwd_card.html' %}
-        {% endfor %}
+      <div class="pwd-grid" id="pwdGrid">
+        {% for entry in entries %}{% include 'vault/_pwd_card.html' %}{% endfor %}
       </div>
       {% else %}
       <div class="empty-state">
         <div class="empty-icon">🔐</div>
-        <div class="empty-title">
-          {% if search %}No results found{% else %}Your vault is empty{% endif %}
-        </div>
-        <div class="empty-desc">
-          {% if search %}Try a different search term{% else %}Start adding passwords to keep them safe{% endif %}
-        </div>
-        {% if not search %}
-        <a href="{% url 'add_entry' %}" class="btn btn-primary">+ Add Your First Password</a>
-        {% endif %}
+        <div class="empty-title">{% if search %}No results found{% else %}Your vault is empty{% endif %}</div>
+        <div class="empty-desc">{% if search %}Try a different search term{% else %}Start adding passwords to keep them safe{% endif %}</div>
+        {% if not search %}<a href="{% url 'add_entry' %}" class="btn btn-primary">+ Add Your First Password</a>{% endif %}
       </div>
       {% endif %}
     </div>
   </div>
 </div>
 
-<!-- DELETE MODALS -->
+<!-- DELETE FORMS -->
 {% for entry in entries %}
-<form id="del-{{ entry.pk }}" method="post" action="{% url 'delete_entry' entry.pk %}" style="display:none;">
+<form id="del-{{ entry.pk }}" method="post" action="{% url 'delete_entry' entry.pk %}" style="display:none">
   {% csrf_token %}
 </form>
 {% endfor %}
+{% for entry in favorites %}
+<form id="del-{{ entry.pk }}" method="post" action="{% url 'delete_entry' entry.pk %}" style="display:none">
+  {% csrf_token %}
+</form>
+{% endfor %}
+
+<script>
+/* Debounced search */
+const si=document.getElementById('searchInput');
+if(si){let t;si.addEventListener('input',function(){clearTimeout(t);t=setTimeout(()=>document.getElementById('searchForm').submit(),350);});}
+
+/* Count-up on stat cards */
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.stat-value[data-count]').forEach(el=>{
+    const target=parseInt(el.dataset.count,10);
+    if(!target)return;
+    el.textContent='0';
+    let cur=0;const step=Math.max(1,Math.ceil(target/40));
+    function tick(){cur=Math.min(cur+step,target);el.textContent=cur;if(cur<target)requestAnimationFrame(tick);}
+    requestAnimationFrame(tick);
+  });
+});
+</script>
 {% endblock %}

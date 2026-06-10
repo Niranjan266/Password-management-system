@@ -3,14 +3,18 @@
 {% block body %}
 <div class="auth-page">
   <div class="auth-bg-glow"></div>
+  <div class="auth-orb auth-orb-1"></div>
+  <div class="auth-orb auth-orb-2"></div>
+  <div class="auth-orb auth-orb-3"></div>
+
+  <!-- Animated grid dots background -->
+  <canvas id="gridCanvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0.4"></canvas>
+
   <div class="auth-card">
     <div class="auth-logo">
-      <a href="#" class="logo-mark">
+      <a href="#" class="logo-mark" style="justify-content:center">
         <div class="logo-icon">🔐</div>
-        <div>
-          VaultX
-          <span class="logo-sub">Password Manager</span>
-        </div>
+        <div>VaultX<span class="logo-sub">Password Manager</span></div>
       </a>
     </div>
 
@@ -18,28 +22,40 @@
     <p class="auth-subtitle">Sign in to access your encrypted vault</p>
 
     {% if form.non_field_errors %}
-    <div class="msg error" style="margin-bottom:18px;">
-      <span>⚠</span> {{ form.non_field_errors.0 }}
-    </div>
+    <script>document.addEventListener('DOMContentLoaded',()=>showPopup('{{ form.non_field_errors.0|escapejs }}','error'));</script>
     {% endif %}
 
-    <form method="post">
+    <form method="post" id="loginForm">
       {% csrf_token %}
-      <div class="form-row">
+      <div class="form-row" style="animation-delay:.3s">
         <label>Username</label>
-        <input type="text" name="username" placeholder="Enter your username" autofocus autocomplete="username">
+        <div style="position:relative">
+          <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;color:var(--text-muted);transition:color .2s" id="userIcon">👤</span>
+          <input type="text" name="username" placeholder="Enter your username" autofocus autocomplete="username"
+                 style="padding-left:40px"
+                 onfocus="document.getElementById('userIcon').style.color='var(--accent)'"
+                 onblur="document.getElementById('userIcon').style.color='var(--text-muted)'">
+        </div>
         {% if form.username.errors %}<div class="error-msg">{{ form.username.errors.0 }}</div>{% endif %}
       </div>
-      <div class="form-row">
+
+      <div class="form-row" style="animation-delay:.36s">
         <label>Master Password</label>
-        <div class="input-with-btn">
-          <input type="password" name="password" id="loginPwd" placeholder="Enter your password" autocomplete="current-password">
+        <div class="input-with-btn" style="position:relative">
+          <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;color:var(--text-muted);transition:color .2s;z-index:1" id="lockIcon">🔒</span>
+          <input type="password" name="password" id="loginPwd" placeholder="Enter your password"
+                 autocomplete="current-password" style="padding-left:40px"
+                 onfocus="document.getElementById('lockIcon').style.color='var(--accent)'"
+                 onblur="document.getElementById('lockIcon').style.color='var(--text-muted)'">
           <button type="button" class="input-inner-btn" onclick="togglePassword('loginPwd')">👁</button>
         </div>
         {% if form.password.errors %}<div class="error-msg">{{ form.password.errors.0 }}</div>{% endif %}
       </div>
-      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:13px; font-size:15px; margin-top:6px;">
-        Unlock Vault →
+
+      <button type="submit" class="btn btn-primary" id="loginBtn"
+              style="width:100%;justify-content:center;padding:13px;font-size:15px;margin-top:6px;animation:fadeInUp .4s .42s ease both">
+        <span class="btn-text">🔓 Unlock Vault</span>
+        <span class="btn-spinner"><span></span><span></span><span></span></span>
       </button>
     </form>
 
@@ -47,11 +63,44 @@
       New to VaultX? <a href="{% url 'register' %}">Create an account</a>
     </p>
 
-    <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border);">
-      <p style="font-size:12px; color:var(--text-muted); text-align:center;">
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);animation:fadeInUp .4s .55s ease both">
+      <p style="font-size:12px;color:var(--text-muted);text-align:center">
         🔒 End-to-end encrypted · Your data, your keys
       </p>
     </div>
   </div>
 </div>
+
+<script>
+/* Animated canvas grid */
+const canvas=document.getElementById('gridCanvas');
+const ctx=canvas.getContext('2d');
+function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+resizeCanvas();window.addEventListener('resize',resizeCanvas);
+function drawGrid(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const size=50;const t=Date.now()/3000;
+  ctx.strokeStyle='rgba(79,142,255,0.08)';ctx.lineWidth=1;
+  for(let x=0;x<canvas.width;x+=size){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();}
+  for(let y=0;y<canvas.height;y+=size){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();}
+  /* pulsing dots at intersections */
+  for(let x=0;x<canvas.width;x+=size){
+    for(let y=0;y<canvas.height;y+=size){
+      const pulse=Math.sin(t*2+x*0.03+y*0.03)*0.5+0.5;
+      ctx.beginPath();
+      ctx.arc(x,y,1.5*pulse,0,Math.PI*2);
+      ctx.fillStyle=`rgba(79,142,255,${0.12*pulse})`;
+      ctx.fill();
+    }
+  }
+  requestAnimationFrame(drawGrid);
+}
+drawGrid();
+
+/* Loading on submit */
+document.getElementById('loginForm').addEventListener('submit',function(){
+  const btn=document.getElementById('loginBtn');
+  btn.classList.add('btn-loading');
+});
+</script>
 {% endblock %}

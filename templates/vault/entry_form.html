@@ -7,10 +7,7 @@
     <div class="sidebar-logo">
       <a href="{% url 'dashboard' %}" class="logo-mark">
         <div class="logo-icon">🔐</div>
-        <div>
-          VaultX
-          <span class="logo-sub">Password Manager</span>
-        </div>
+        <div>VaultX<span class="logo-sub">Password Manager</span></div>
       </a>
     </div>
     <div class="sidebar-user">
@@ -32,7 +29,7 @@
       </a>
     </nav>
     <div class="sidebar-footer">
-      <a href="{% url 'logout' %}" class="nav-link" style="color:var(--rose);">
+      <a href="{% url 'logout' %}" class="nav-link" style="color:var(--rose)">
         <span class="nav-icon">🚪</span> Sign Out
       </a>
     </div>
@@ -43,19 +40,31 @@
       <div class="topbar-title">{{ title }}</div>
     </div>
 
+    {% if messages %}
+    <script>
+    document.addEventListener('DOMContentLoaded',function(){
+      {% for msg in messages %}
+      showPopup('{{ msg|escapejs }}','{% if "success" in msg.tags %}success{% elif "error" in msg.tags %}error{% else %}info{% endif %}');
+      {% endfor %}
+    });
+    </script>
+    {% endif %}
+
     <div class="page-body">
       <div class="form-page">
 
-        <!-- Quick Add Platforms -->
+        <!-- Quick Platforms -->
         {% if not entry %}
-        <div class="card" style="margin-bottom:20px;">
-          <div style="font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.07em;">Quick Select Platform</div>
-          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        <div class="card" style="margin-bottom:20px;animation:fadeInUp .4s ease both">
+          <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:12px;text-transform:uppercase;letter-spacing:.07em">⚡ Quick Select Platform</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px" id="platformChips">
             {% for platform, cat, domain in quick_platforms %}
             <button type="button" class="cat-chip"
-                    onclick="selectPlatform('{{ platform }}', '{{ cat }}', '{{ domain }}', event)"
-                    data-platform="{{ platform }}" data-cat="{{ cat }}">
-              <img src="https://www.google.com/s2/favicons?domain={{ domain }}&sz=64" alt="" class="quick-platform-logo"> {{ platform }}
+                    onclick="selectPlatform('{{ platform }}','{{ cat }}','{{ domain }}',this)"
+                    data-platform="{{ platform }}" data-cat="{{ cat }}"
+                    style="display:flex;align-items:center;gap:6px;transition:all .2s cubic-bezier(.34,1.56,.64,1)">
+              <img src="https://www.google.com/s2/favicons?domain={{ domain }}&sz=64" alt="" class="quick-platform-logo"
+                   onerror="this.style.display='none'"> {{ platform }}
             </button>
             {% endfor %}
           </div>
@@ -64,22 +73,21 @@
 
         <div class="form-card">
           <div class="form-title">
-            <span>{% if entry %}✏{% else %}＋{% endif %}</span>
-            {{ title }}
+            <span>{% if entry %}✏{% else %}＋{% endif %}</span>{{ title }}
           </div>
 
-          <form method="post" enctype="multipart/form-data">
+          <form method="post" enctype="multipart/form-data" id="entryForm">
             {% csrf_token %}
 
-            <div class="form-row-2">
-              <div class="form-row" style="margin-bottom:0">
+            <div class="form-row-2" style="animation:fadeInUp .4s .06s ease both;margin-bottom:18px">
+              <div>
                 <label>Platform / Service *</label>
                 <input type="text" name="platform" id="platformInput"
                        placeholder="e.g. Google, GitHub, AWS…"
                        value="{{ form.platform.value|default:'' }}" required>
                 {% if form.platform.errors %}<div class="error-msg">{{ form.platform.errors.0 }}</div>{% endif %}
               </div>
-              <div class="form-row" style="margin-bottom:0">
+              <div>
                 <label>Category *</label>
                 <select name="category" id="categorySelect">
                   {% for val, label in categories %}
@@ -89,26 +97,24 @@
               </div>
             </div>
 
-            <div style="margin-bottom:18px;"></div>
-
-            <div class="form-row">
-              <label>Logo Image Address <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);">(Optional)</span></label>
+            <div class="form-row" style="animation-delay:.10s">
+              <label>Logo Image URL <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);font-weight:400">(Optional)</span></label>
               {% if entry %}
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                <img src="{{ entry.logo_image_url }}" alt="{{ entry.platform }} logo" class="pwd-platform-logo" style="width:42px;height:42px;">
-                <span style="font-size:12px;color:var(--text-muted);">Current logo preview</span>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <img src="{{ entry.logo_image_url }}" alt="{{ entry.platform }} logo" class="pwd-platform-logo"
+                     style="width:42px;height:42px;border-radius:10px;border:1px solid var(--border)">
+                <span style="font-size:12px;color:var(--text-muted)">Current logo preview</span>
               </div>
               {% endif %}
               <input type="url" name="logo_url" id="logoUrlInput"
                      placeholder="https://example.com/logo.png"
                      value="{{ form.logo_url.value|default:'' }}">
               {% if form.logo_url.errors %}<div class="error-msg">{{ form.logo_url.errors.0 }}</div>{% endif %}
-              <div style="font-size:12px;color:var(--text-muted);margin:8px 0;">Or upload an image file:</div>
+              <div style="font-size:12px;color:var(--text-muted);margin:8px 0">Or upload an image:</div>
               <input type="file" name="logo" accept="image/*">
-              {% if form.logo.errors %}<div class="error-msg">{{ form.logo.errors.0 }}</div>{% endif %}
             </div>
 
-            <div class="form-row">
+            <div class="form-row" style="animation-delay:.14s">
               <label>Username / Email *</label>
               <input type="text" name="username"
                      placeholder="your@email.com or username"
@@ -116,17 +122,18 @@
               {% if form.username.errors %}<div class="error-msg">{{ form.username.errors.0 }}</div>{% endif %}
             </div>
 
-            <div class="form-row">
+            <div class="form-row" style="animation-delay:.18s">
               <label>Password *</label>
-              <div class="input-with-btn" style="display:flex; gap:8px; align-items:flex-start;">
-                <div style="flex:1; position:relative;">
+              <div style="display:flex;gap:8px;align-items:flex-start">
+                <div style="flex:1;position:relative">
                   <input type="password" name="password" id="mainPassword"
                          placeholder="Enter or generate password"
                          value="{{ form.password.value|default:'' }}"
                          oninput="updateStrength(this)" required>
                   <button type="button" class="input-inner-btn" onclick="togglePassword('mainPassword')">👁</button>
                 </div>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="generatePassword('mainPassword')" style="white-space:nowrap; height:42px; margin-top:0;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="generatePassword('mainPassword')"
+                        style="white-space:nowrap;height:42px;margin-top:0">
                   ⚡ Generate
                 </button>
               </div>
@@ -143,30 +150,29 @@
               {% if form.password.errors %}<div class="error-msg">{{ form.password.errors.0 }}</div>{% endif %}
             </div>
 
-            <div class="form-row">
+            <div class="form-row" style="animation-delay:.22s">
               <label>Website URL</label>
-              <input type="url" name="url"
-                     placeholder="https://example.com"
+              <input type="url" name="url" placeholder="https://example.com"
                      value="{{ form.url.value|default:'' }}">
               {% if form.url.errors %}<div class="error-msg">{{ form.url.errors.0 }}</div>{% endif %}
             </div>
 
-            <div class="form-row">
+            <div class="form-row" style="animation-delay:.26s">
               <label>Notes</label>
               <textarea name="notes" placeholder="Optional — security questions, account numbers, etc.">{{ form.notes.value|default:'' }}</textarea>
             </div>
 
-            <div class="form-row">
-              <label class="checkbox-row" style="text-transform:none; letter-spacing:0;">
-                <input type="checkbox" name="is_favorite"
-                       {% if form.is_favorite.value %}checked{% endif %}>
+            <div class="form-row" style="animation-delay:.30s">
+              <label class="checkbox-row" style="text-transform:none;letter-spacing:0">
+                <input type="checkbox" name="is_favorite" {% if form.is_favorite.value %}checked{% endif %}>
                 <span>⭐ Mark as Favorite</span>
               </label>
             </div>
 
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary">
-                {% if entry %}💾 Save Changes{% else %}🔐 Save to Vault{% endif %}
+            <div class="form-actions" style="animation:fadeInUp .4s .34s ease both">
+              <button type="submit" class="btn btn-primary" id="saveBtn">
+                <span class="btn-text">{% if entry %}💾 Save Changes{% else %}🔐 Save to Vault{% endif %}</span>
+                <span class="btn-spinner"><span></span><span></span><span></span></span>
               </button>
               <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
             </div>
@@ -178,45 +184,35 @@
 </div>
 
 <script>
-function selectPlatform(platform, category, domain, clickEvent) {
-  document.getElementById('platformInput').value = platform;
-  document.getElementById('categorySelect').value = category;
-  document.getElementById('logoUrlInput').value = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-  // Highlight selected chip
-  document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
-  clickEvent.currentTarget.classList.add('active');
-  // Auto-fill URL hints
-  const urls = {
-    'Google': 'https://myaccount.google.com',
-    'Gmail': 'https://mail.google.com',
-    'GitHub': 'https://github.com',
-    'GitLab': 'https://gitlab.com',
-    'Facebook': 'https://facebook.com',
-    'Instagram': 'https://instagram.com',
-    'Twitter': 'https://twitter.com',
-    'LinkedIn': 'https://linkedin.com',
-    'Microsoft': 'https://account.microsoft.com',
-    'Outlook': 'https://outlook.live.com',
-    'AWS': 'https://console.aws.amazon.com',
-    'Azure': 'https://portal.azure.com',
-    'Dropbox': 'https://dropbox.com',
-    'Notion': 'https://notion.so',
-    'Slack': 'https://slack.com',
-    'Discord': 'https://discord.com',
-    'Apple': 'https://appleid.apple.com',
-    'Spotify': 'https://spotify.com',
-    'Netflix': 'https://netflix.com',
-    'PayPal': 'https://paypal.com',
-    'TeamViewer': 'https://teamviewer.com',
-    'AnyDesk': 'https://anydesk.com',
-    'Zoom': 'https://zoom.us',
-    'Figma': 'https://figma.com',
-    'Jira': 'https://id.atlassian.com',
-  };
-  if (urls[platform]) {
-    const urlInput = document.querySelector('input[name="url"]');
-    if (!urlInput.value) urlInput.value = urls[platform];
-  }
+const URL_HINTS={
+  'Google':'https://myaccount.google.com','Gmail':'https://mail.google.com',
+  'GitHub':'https://github.com','GitLab':'https://gitlab.com',
+  'Facebook':'https://facebook.com','Instagram':'https://instagram.com',
+  'Twitter':'https://twitter.com','LinkedIn':'https://linkedin.com',
+  'Microsoft':'https://account.microsoft.com','Outlook':'https://outlook.live.com',
+  'AWS':'https://console.aws.amazon.com','Azure':'https://portal.azure.com',
+  'Dropbox':'https://dropbox.com','Notion':'https://notion.so',
+  'Slack':'https://slack.com','Discord':'https://discord.com',
+  'Apple':'https://appleid.apple.com','Spotify':'https://spotify.com',
+  'Netflix':'https://netflix.com','PayPal':'https://paypal.com',
+  'TeamViewer':'https://teamviewer.com','AnyDesk':'https://anydesk.com',
+  'Zoom':'https://zoom.us','Figma':'https://figma.com','Jira':'https://id.atlassian.com',
+};
+
+function selectPlatform(platform,category,domain,chip){
+  document.getElementById('platformInput').value=platform;
+  document.getElementById('categorySelect').value=category;
+  document.getElementById('logoUrlInput').value=`https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+  document.querySelectorAll('#platformChips .cat-chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  chip.style.transform='scale(1.08)';
+  setTimeout(()=>chip.style.transform='',300);
+  const urlInput=document.querySelector('input[name="url"]');
+  if(urlInput&&!urlInput.value&&URL_HINTS[platform])urlInput.value=URL_HINTS[platform];
 }
+
+document.getElementById('entryForm').addEventListener('submit',function(){
+  document.getElementById('saveBtn').classList.add('btn-loading');
+});
 </script>
 {% endblock %}

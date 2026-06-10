@@ -1,39 +1,155 @@
 {% extends 'vault/base.html' %}
-{% block title %}{{ platform.name }} - VaultX{% endblock %}
+{% block title %}{{ platform.name }} — VaultX{% endblock %}
 {% block body %}
 <div class="app-layout">
-  <aside class="sidebar"><div class="sidebar-logo"><a href="{% url 'dashboard' %}" class="logo-mark"><div class="logo-icon">&#128274;</div><div>VaultX<span class="logo-sub">Password & Data Manager</span></div></a></div><nav class="sidebar-nav"><div class="nav-section-label">Navigation</div><a href="{% url 'data_spaces' %}" class="nav-link"><span class="nav-icon">&#8592;</span> All Data Spaces</a><a href="{% url 'edit_data_platform' platform.pk %}" class="nav-link active"><span class="nav-icon">{% if platform.platform_type == 'note' %}N{% else %}S{% endif %}</span> {{ platform.name }}</a></nav></aside>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="{% url 'dashboard' %}" class="logo-mark">
+        <div class="logo-icon">🔐</div>
+        <div>VaultX<span class="logo-sub">Password & Data Manager</span></div>
+      </a>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-pill">
+        <div class="user-avatar">{{ request.user.username|first|upper }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ request.user.username }}</div>
+          <div class="user-role">Personal Vault</div>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Navigation</div>
+      <a href="{% url 'data_spaces' %}" class="nav-link"><span class="nav-icon">←</span> All Data Spaces</a>
+      <a href="{% url 'edit_data_platform' platform.pk %}" class="nav-link active">
+        <span class="nav-icon">{% if platform.platform_type == 'note' %}📝{% else %}📊{% endif %}</span>
+        {{ platform.name }}
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="{% url 'logout' %}" class="nav-link" style="color:var(--rose)">Sign Out</a>
+    </div>
+  </aside>
+
   <main class="main-content">
-    <div class="topbar">{% if platform.image %}<img src="{{ platform.image.url }}" alt="" class="space-card-image" style="width:36px;height:36px;">{% endif %}<div class="topbar-title">{{ platform.name }} <span class="space-meta">{{ platform.get_platform_type_display }}</span></div><a href="{% url 'data_spaces' %}" class="btn btn-secondary btn-sm">Close</a></div>
-    {% if messages %}<div class="messages-bar">{% for msg in messages %}<div class="msg {{ msg.tags }}">{{ msg }}</div>{% endfor %}</div>{% endif %}
-    <div class="page-body"><div class="editor-shell"><form method="post" id="editorForm">{% csrf_token %}
-      {% if platform.platform_type == 'note' %}
-      <textarea class="note-editor" name="note_content" placeholder="Start writing your notes here...">{{ platform.note_content }}</textarea>
-      {% else %}
-      <div class="sheet-toolbar"><button type="button" class="btn btn-secondary btn-sm" onclick="addRow()">+ Row</button><button type="button" class="btn btn-secondary btn-sm" onclick="addColumn()">+ Column</button></div>
-      <div class="sheet-wrap"><table class="data-sheet" id="dataSheet"></table></div><input type="hidden" name="sheet_data" id="serializedSheetData">{{ platform.sheet_data|json_script:"initial-sheet-data" }}
+    <div class="topbar">
+      {% if platform.image %}
+      <img src="{{ platform.image.url }}" alt="" class="space-card-image" style="width:36px;height:36px">
       {% endif %}
-      <div class="form-actions"><button type="submit" class="btn btn-primary">Save Data</button><span class="space-meta">Saved in your database</span></div>
-    </form></div></div>
+      <div class="topbar-title">
+        {{ platform.name }}
+        <span class="space-meta" style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px">{{ platform.get_platform_type_display }}</span>
+      </div>
+      <!-- Auto-save indicator -->
+      <div id="saveIndicator" style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px;opacity:0;transition:opacity .3s">
+        <span id="saveSpinner" style="width:14px;height:14px;border:2px solid rgba(79,142,255,.3);border-top-color:var(--accent);border-radius:50%;display:none"></span>
+        <span id="saveText">All changes saved</span>
+      </div>
+      <a href="{% url 'data_spaces' %}" class="btn btn-secondary btn-sm">Close</a>
+    </div>
+
+    {% if messages %}
+    <script>
+    document.addEventListener('DOMContentLoaded',function(){
+      {% for msg in messages %}
+      showPopup('{{ msg|escapejs }}','{% if "success" in msg.tags %}success{% elif "error" in msg.tags %}error{% else %}info{% endif %}');
+      {% endfor %}
+    });
+    </script>
+    {% endif %}
+
+    <div class="page-body">
+      <div class="editor-shell">
+        <form method="post" id="editorForm">
+          {% csrf_token %}
+          {% if platform.platform_type == 'note' %}
+          <textarea class="note-editor" name="note_content"
+                    placeholder="Start writing your notes here…"
+                    style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);color:var(--text-primary);font-size:15px;resize:vertical"
+                    id="noteArea">{{ platform.note_content }}</textarea>
+          {% else %}
+          <div class="sheet-toolbar">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addRow()">+ Row</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addColumn()">+ Column</button>
+            <span style="font-size:12px;color:var(--text-muted);margin-left:auto;align-self:center">Spreadsheet mode</span>
+          </div>
+          <div class="sheet-wrap">
+            <table class="data-sheet" id="dataSheet"></table>
+          </div>
+          <input type="hidden" name="sheet_data" id="serializedSheetData">
+          {{ platform.sheet_data|json_script:"initial-sheet-data" }}
+          {% endif %}
+
+          <div class="form-actions" style="margin-top:20px;animation:fadeInUp .4s .2s ease both">
+            <button type="submit" class="btn btn-primary" id="saveBtn">
+              <span class="btn-text">💾 Save Data</span>
+              <span class="btn-spinner"><span></span><span></span><span></span></span>
+            </button>
+            <span class="space-meta" style="align-self:center">Saved in your database</span>
+          </div>
+        </form>
+      </div>
+    </div>
   </main>
 </div>
+
 {% if platform.platform_type == 'sheet' %}
 <script>
-let gridData = JSON.parse(document.getElementById('initial-sheet-data').textContent);
-if (!gridData.length) gridData = [['', '', '']];
-function escapeHtml(value) { return String(value).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
-function renderSheet() {
-  const cols = Math.max(1, ...gridData.map(row => row.length));
-  gridData = gridData.map(row => [...row, ...Array(cols - row.length).fill('')]);
-  document.getElementById('dataSheet').innerHTML = '<thead><tr>' + Array.from({length:cols},(_,i)=>`<th>${String.fromCharCode(65+i)}</th>`).join('') + '</tr></thead><tbody>' + gridData.map((row,r)=>'<tr>'+row.map((cell,c)=>`<td><input value="${escapeHtml(cell)}" data-row="${r}" data-col="${c}"></td>`).join('')+'</tr>').join('') + '</tbody>';
-  document.querySelectorAll('#dataSheet input').forEach(input => input.addEventListener('input', event => {
-    gridData[Number(event.target.dataset.row)][Number(event.target.dataset.col)] = event.target.value;
+let gridData=JSON.parse(document.getElementById('initial-sheet-data').textContent);
+if(!gridData.length)gridData=[['','','']];
+function escapeHtml(v){return String(v).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
+function renderSheet(){
+  const cols=Math.max(1,...gridData.map(r=>r.length));
+  gridData=gridData.map(r=>[...r,...Array(cols-r.length).fill('')]);
+  document.getElementById('dataSheet').innerHTML=
+    '<thead><tr>'+Array.from({length:cols},(_,i)=>`<th>${String.fromCharCode(65+i)}</th>`).join('')+'</tr></thead>'+
+    '<tbody>'+gridData.map((row,r)=>'<tr>'+row.map((cell,c)=>`<td><input value="${escapeHtml(cell)}" data-row="${r}" data-col="${c}"></td>`).join('')+'</tr>').join('')+'</tbody>';
+  document.querySelectorAll('#dataSheet input').forEach(input=>input.addEventListener('input',e=>{
+    gridData[+e.target.dataset.row][+e.target.dataset.col]=e.target.value;
   }));
 }
-function addRow(){ gridData.push(Array(gridData[0].length).fill('')); renderSheet(); }
-function addColumn(){ gridData.forEach(row=>row.push('')); renderSheet(); }
-document.getElementById('editorForm').addEventListener('submit',()=>document.getElementById('serializedSheetData').value=JSON.stringify(gridData));
+function addRow(){gridData.push(Array(gridData[0].length).fill(''));renderSheet();}
+function addColumn(){gridData.forEach(r=>r.push(''));renderSheet();}
+document.getElementById('editorForm').addEventListener('submit',()=>{
+  document.getElementById('serializedSheetData').value=JSON.stringify(gridData);
+  document.getElementById('saveBtn').classList.add('btn-loading');
+});
 renderSheet();
+</script>
+{% else %}
+<script>
+document.getElementById('editorForm').addEventListener('submit',()=>{
+  document.getElementById('saveBtn').classList.add('btn-loading');
+});
+/* Auto-save note with debounce */
+const noteArea=document.getElementById('noteArea');
+const indicator=document.getElementById('saveIndicator');
+const spinner=document.getElementById('saveSpinner');
+const saveText=document.getElementById('saveText');
+if(noteArea){
+  let autoTimer;
+  noteArea.addEventListener('input',()=>{
+    clearTimeout(autoTimer);
+    indicator.style.opacity='1';
+    spinner.style.display='block';
+    spinner.style.animation='spin .8s linear infinite';
+    saveText.textContent='Saving…';
+    autoTimer=setTimeout(async()=>{
+      const fd=new FormData();
+      fd.append('note_content',noteArea.value);
+      fd.append('csrfmiddlewaretoken',document.querySelector('[name=csrfmiddlewaretoken]').value);
+      try{
+        const r=await fetch(window.location.href,{method:'POST',body:fd});
+        if(r.ok){
+          spinner.style.display='none';
+          saveText.textContent='✓ All changes saved';
+          saveText.style.color='var(--green)';
+          setTimeout(()=>{indicator.style.opacity='0';saveText.style.color='';},2500);
+        }
+      }catch(e){saveText.textContent='⚠ Save failed';saveText.style.color='var(--rose)';}
+    },1200);
+  });
+}
 </script>
 {% endif %}
 {% endblock %}

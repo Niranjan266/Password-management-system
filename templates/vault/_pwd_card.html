@@ -1,18 +1,19 @@
 {% load static %}
-<div class="pwd-card" style="--card-accent: {{ entry.category_color }}">
+<div class="pwd-card" style="--card-accent:{{ entry.category_color }}">
   <div class="pwd-card-header">
     <div class="pwd-platform-icon">
-      <img src="{{ entry.logo_image_url }}" alt="{{ entry.platform }} logo" class="pwd-platform-logo">
+      <img src="{{ entry.logo_image_url }}" alt="{{ entry.platform }} logo" class="pwd-platform-logo"
+           onerror="this.style.display='none';this.parentNode.textContent='🔑'">
     </div>
     <div class="pwd-platform-info">
       <div class="pwd-platform-name">{{ entry.platform }}</div>
-      <span class="pwd-category-badge" style="background:{{ entry.category_color }}22; color:{{ entry.category_color }};">
+      <span class="pwd-category-badge" style="background:{{ entry.category_color }}22;color:{{ entry.category_color }}">
         {{ entry.get_category_display }}
       </span>
     </div>
     <div class="pwd-actions">
       <button class="action-btn {% if entry.is_favorite %}fav-active{% endif %}"
-              onclick="toggleFavorite({{ entry.pk }}, this)"
+              onclick="toggleFavorite({{ entry.pk }},this)"
               title="{% if entry.is_favorite %}Remove from favorites{% else %}Add to favorites{% endif %}">
         {% if entry.is_favorite %}★{% else %}☆{% endif %}
       </button>
@@ -23,32 +24,31 @@
 
   <!-- Username -->
   <div class="pwd-field">
-    <div style="flex:1; min-width:0;">
+    <div style="flex:1;min-width:0">
       <div class="pwd-field-label">Username / Email</div>
       <div class="pwd-field-value">{{ entry.username }}</div>
     </div>
-    <button class="copy-btn" onclick="copyText('{{ entry.username|escapejs }}', 'Username')" title="Copy username">📋</button>
+    <button class="copy-btn" onclick="copyText('{{ entry.username|escapejs }}','Username')" title="Copy username">📋</button>
   </div>
 
   <!-- Password -->
   <div class="pwd-field">
-    <div style="flex:1; min-width:0;">
+    <div style="flex:1;min-width:0">
       <div class="pwd-field-label">Password</div>
       <div class="pwd-field-value pwd-masked" id="pwd-val-{{ entry.pk }}" data-revealed="false">••••••••</div>
     </div>
-    <button class="copy-btn" onclick="revealPassword({{ entry.pk }}, this)" title="Show/Hide" id="rev-btn-{{ entry.pk }}">👁</button>
+    <button class="copy-btn" onclick="revealPassword({{ entry.pk }},this)" title="Show/Hide" id="rev-btn-{{ entry.pk }}">👁</button>
     <button class="copy-btn" onclick="copyPassword({{ entry.pk }})" title="Copy password">📋</button>
   </div>
 
   {% if entry.url %}
   <a href="{{ entry.url }}" target="_blank" class="pwd-url">
-    <span>🔗</span>
-    {{ entry.url|truncatechars:40 }}
+    <span>🔗</span>{{ entry.url|truncatechars:40 }}
   </a>
   {% endif %}
 
   {% if entry.notes %}
-  <div style="margin-top:10px; font-size:12px; color:var(--text-muted); padding:8px 10px; background:var(--bg-surface); border-radius:7px; border:1px solid var(--border);">
+  <div style="margin-top:10px;font-size:12px;color:var(--text-muted);padding:8px 10px;background:var(--bg-surface);border-radius:7px;border:1px solid var(--border);transition:background .2s;line-height:1.5">
     📝 {{ entry.notes|truncatechars:80 }}
   </div>
   {% endif %}
